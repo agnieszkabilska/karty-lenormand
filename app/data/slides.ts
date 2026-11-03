@@ -395,10 +395,10 @@ const mobileLayouts: Record<string, SlideMobile> = {
         tone: 'navy',
         items: [
           { k: 'block', i: 0, cls: 'h3' },
-          { k: 'block', i: 1, cls: 'body' },
+          { k: 'block', i: 1, cls: 'body center' },
           { k: 'sep' },
           { k: 'block', i: 2, cls: 'h3' },
-          { k: 'block', i: 3, cls: 'body' }
+          { k: 'block', i: 3, cls: 'body center' }
         ]
       },
       { k: 'crop', r: { x: 290, y: 662, w: 870, h: 140 } }
