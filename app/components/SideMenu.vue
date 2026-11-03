@@ -22,14 +22,14 @@
     </nav>
 
     <div class="contact">
-      <a href="tel:+48729995196">+48 729 995 196</a>
-      <a href="mailto:justyna109a@onet.pl">justyna109a@onet.pl</a>
+      <a :href="WHATSAPP" target="_blank" rel="noopener">{{ PHONE_DISPLAY }}</a>
+      <a :href="MAIL">{{ EMAIL }}</a>
     </div>
   </aside>
 </template>
 
 <script setup lang="ts">
-import { slides } from '~/data/slides'
+import { EMAIL, MAIL, PHONE_DISPLAY, WHATSAPP, slides } from '~/data/slides'
 
 const active = ref(slides[0]!.id)
 let observer: IntersectionObserver | undefined

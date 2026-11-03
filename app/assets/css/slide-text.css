@@ -1,0 +1,80 @@
+/* Text layer drawn over the PDF slide pictures (desktop slides and phone crops).
+   Lines are positioned in PDF units; --u is one PDF unit in the current view. */
+
+.block {
+  display: contents;
+  margin: 0;
+}
+
+.line {
+  position: absolute;
+  font-size: calc(var(--size) * var(--u));
+  line-height: var(--lh);
+  white-space: nowrap;
+  transform: translateY(calc(-1em * var(--asc)));
+  transform-origin: 0 0;
+  text-decoration: none;
+}
+
+.line--center {
+  transform: translate(-50%, calc(-1em * var(--asc)));
+  text-align: center;
+}
+
+.line--justify {
+  text-align: justify;
+  text-align-last: justify;
+}
+
+a.line:hover,
+a.line:focus-visible {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.hotspot {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.hotspot:focus-visible {
+  outline: 2px solid currentColor;
+}
+
+/* Font metrics taken from the PDF so baselines land exactly where they were */
+.font--script {
+  font-family: 'Quintessential', serif;
+  font-weight: 400;
+  --asc: 1.143;
+  --lh: 1.533;
+}
+
+.font--serif,
+.font--serif-bold {
+  font-family: 'Cormorant Garamond', serif;
+  --asc: 0.924;
+  --lh: 1.211;
+}
+
+.font--serif {
+  font-weight: 400;
+}
+
+.font--serif-bold {
+  font-weight: 700;
+}
+
+.font--sans,
+.font--sans-bold {
+  font-family: 'Josefin Sans', sans-serif;
+  --asc: 0.75;
+  --lh: 1;
+}
+
+.font--sans {
+  font-weight: 400;
+}
+
+.font--sans-bold {
+  font-weight: 700;
+}

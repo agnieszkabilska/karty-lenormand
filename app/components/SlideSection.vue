@@ -15,13 +15,14 @@
           <a
             v-else
             :href="part.href"
-            :target="part.href.startsWith('http') ? '_blank' : undefined"
-            :rel="part.href.startsWith('http') ? 'noopener' : undefined"
+            :target="isExternal(part.href) ? '_blank' : undefined"
+            :rel="isExternal(part.href) ? 'noopener' : undefined"
           >{{ part.t }}</a>
         </template>
       </p>
     </header>
 
+    <!-- Desktop / tablet: the whole PDF slide, scaled to fit -->
     <div class="stage">
       <img
         class="bg"
@@ -31,42 +32,16 @@
         height="1620"
         :fetchpriority="eager ? 'high' : 'auto'"
       />
-
-      <component
-        :is="block.tag"
-        v-for="(block, bi) in slide.blocks"
-        :key="bi"
-        class="block"
-        :class="`font--${block.font}`"
-        :style="{ '--size': block.size, color: block.color }"
-      >
-        <template v-for="(line, li) in block.lines" :key="li">
-          <a v-if="line.href" :href="line.href" class="line" :style="lineStyle(line)">{{ line.t }}</a>
-          <span v-else class="line" :class="`line--${line.align ?? 'left'}`" :style="lineStyle(line)">{{ line.t }} </span>
-        </template>
-      </component>
-
-      <a
-        v-for="(h, hi) in slide.hotspots"
-        :key="`h${hi}`"
-        class="hotspot"
-        :href="h.href"
-        :aria-label="h.label"
-        :target="h.href.startsWith('http') ? '_blank' : undefined"
-        :rel="h.href.startsWith('http') ? 'noopener' : undefined"
-        :style="{
-          left: pctX(h.x),
-          top: pctY(h.y),
-          width: pctX(h.w),
-          height: pctY(h.h)
-        }"
-      />
+      <SlideText :slide="slide" />
     </div>
+
+    <!-- Phones: the same content re-flowed into a readable column -->
+    <SlideMobile v-if="slide.mobile" class="phone" :slide="slide" />
   </section>
 </template>
 
 <script setup lang="ts">
-import { SLIDE_H, SLIDE_W, type Line, type Slide } from '~/data/slides'
+import type { Slide } from '~/data/slides'
 
 const props = defineProps<{ slide: Slide; prevFill: string; nextFill: string; eager?: boolean }>()
 
@@ -79,16 +54,6 @@ const ombre = computed(() => {
     background: `linear-gradient(180deg, ${mid(props.prevFill)} 0%, ${own} 30%, ${own} 70%, ${mid(props.nextFill)} 100%)`
   }
 })
-
-const pctX = (v: number) => `${(v / SLIDE_W) * 100}%`
-const pctY = (v: number) => `${(v / SLIDE_H) * 100}%`
-
-const lineStyle = (line: Line) => {
-  const style: Record<string, string> = { left: pctX(line.x), top: pctY(line.y) }
-  if (line.align === 'justify' && line.w) style.width = `calc(${line.w} * var(--u))`
-  if (line.rot) style.transform = `rotate(${line.rot}deg) translateY(calc(-1em * var(--asc)))`
-  return style
-}
 </script>
 
 <style scoped>
@@ -110,6 +75,8 @@ const lineStyle = (line: Line) => {
 }
 
 .intro {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -175,6 +142,10 @@ const lineStyle = (line: Line) => {
   mask-composite: intersect;
 }
 
+.phone {
+  display: none;
+}
+
 @media (max-width: 820px) {
   .slide {
     --pad-y: 1.25rem;
@@ -186,81 +157,32 @@ const lineStyle = (line: Line) => {
   }
 }
 
-.block {
-  display: contents;
-  margin: 0;
-}
+/* Phones: swap the scaled slide for the re-flowed column */
+@media (max-width: 700px) {
+  .slide {
+    padding: 3rem 1.25rem;
+    scroll-snap-align: none;
+  }
 
-.line {
-  position: absolute;
-  font-size: calc(var(--size) * var(--u));
-  line-height: var(--lh);
-  white-space: nowrap;
-  transform: translateY(calc(-1em * var(--asc)));
-  transform-origin: 0 0;
-  text-decoration: none;
-}
+  .slide--intro {
+    gap: 1.5rem;
+  }
 
-.line--center {
-  transform: translate(-50%, calc(-1em * var(--asc)));
-  text-align: center;
-}
+  .intro__title {
+    font-size: clamp(1.9rem, 8.5vw, 2.4rem);
+  }
 
-.line--justify {
-  text-align: justify;
-  text-align-last: justify;
-}
+  .intro__text {
+    font-size: 1rem;
+    line-height: 1.6;
+  }
 
-a.line:hover,
-a.line:focus-visible {
-  text-decoration: underline;
-  text-underline-offset: 0.15em;
-}
+  .stage {
+    display: none;
+  }
 
-.hotspot {
-  position: absolute;
-  border-radius: 50%;
-}
-
-.hotspot:focus-visible {
-  outline: 2px solid currentColor;
-}
-
-/* Font metrics taken from the PDF so baselines land exactly where they were */
-.font--script {
-  font-family: 'Quintessential', serif;
-  font-weight: 400;
-  --asc: 1.143;
-  --lh: 1.533;
-}
-
-.font--serif,
-.font--serif-bold {
-  font-family: 'Cormorant Garamond', serif;
-  --asc: 0.924;
-  --lh: 1.211;
-}
-
-.font--serif {
-  font-weight: 400;
-}
-
-.font--serif-bold {
-  font-weight: 700;
-}
-
-.font--sans,
-.font--sans-bold {
-  font-family: 'Josefin Sans', sans-serif;
-  --asc: 0.75;
-  --lh: 1;
-}
-
-.font--sans {
-  font-weight: 400;
-}
-
-.font--sans-bold {
-  font-weight: 700;
+  .phone {
+    display: flex;
+  }
 }
 </style>

@@ -37,12 +37,44 @@ export interface Hotspot {
 export interface Slide {
   id: string
   label: string
-  bg: string
+  bg: string // whole PDF page without text (desktop)
+  art: string // PDF page artwork only, transparent background (phone crops)
   fill: string // colour used around the slide when the screen ratio differs
   blocks: Block[]
   hotspots?: Hotspot[]
   // Optional heading + text shown on the page background above the slide
   intro?: { title: string; text: Array<string | { t: string; href: string }> }
+  // Phone layout (≤ 700px wide), see `mobileLayouts` below
+  mobile?: SlideMobile
+}
+
+/** A rectangle of the slide, in PDF units. */
+export interface Rect {
+  x: number
+  y: number
+  w: number
+  h: number
+}
+
+/** One element of the phone layout, stacked top to bottom. */
+export type MPiece =
+  | { k: 'crop'; r: Rect; blocks?: number[]; hotspots?: boolean; width?: string } // piece of the PDF art (+ its text)
+  | { k: 'block'; i: number; cls: string } // slide block `i` as flowing text
+  | { k: 'panel'; tone: 'plum' | 'navy'; items: MPiece[] } // gold-framed box
+  | { k: 'bullet'; icon: Rect; i: number } // block `i` with an art icon in front
+  | { k: 'sep' } // small ✦ ✧ ✦ divider
+
+/** Decoration from the PDF art pinned to a corner of the section. */
+export interface Deco {
+  r: Rect
+  at: 'tl' | 'tr' | 'bl' | 'br'
+  width: string
+  opacity?: number
+}
+
+export interface SlideMobile {
+  pieces: MPiece[]
+  decos?: Deco[]
 }
 
 const CREAM = '#f0eac2'
@@ -50,9 +82,10 @@ const GOLD = '#d5b163'
 const WHITE = '#ffffff'
 const PLUM = '#5b2c3c'
 
-const PHONE = 'tel:+48729995196'
-const MAIL = 'mailto:justyna109a@onet.pl'
-const WHATSAPP = 'https://wa.me/48729995196'
+export const PHONE_DISPLAY = '+48 729 995 196'
+export const EMAIL = 'justyna109a@onet.pl'
+export const WHATSAPP = 'https://wa.me/48729995196'
+export const MAIL = `mailto:${EMAIL}`
 
 const c = (t: string, x: number, y: number): Line => ({ t, x, y, align: 'center' })
 const j = (t: string, x: number, y: number, w: number): Line => ({ t, x, y, w, align: 'justify' })
@@ -63,6 +96,7 @@ export const slides: Slide[] = [
     id: 'start',
     label: 'Start',
     bg: '/slides/slide-1.jpg',
+    art: '/slides/art-1.webp',
     fill: '#232340',
     blocks: [
       {
@@ -85,6 +119,7 @@ export const slides: Slide[] = [
     id: 'o-mnie',
     label: 'O mnie',
     bg: '/slides/slide-2.jpg',
+    art: '/slides/art-2.webp',
     fill: '#512635',
     blocks: [
       { tag: 'h2', font: 'serif-bold', size: 70, color: CREAM, lines: [c('O mnie', 773.85, 157.6)] },
@@ -118,6 +153,7 @@ export const slides: Slide[] = [
     id: 'karty',
     label: 'Karty Lenormand',
     bg: '/slides/slide-3.jpg',
+    art: '/slides/art-3.webp',
     fill: '#232340',
     blocks: [
       {
@@ -188,6 +224,7 @@ export const slides: Slide[] = [
     id: 'oferta',
     label: 'Oferta i cennik',
     bg: '/slides/slide-4.jpg',
+    art: '/slides/art-4.webp',
     fill: '#512635',
     blocks: [
       { tag: 'h2', font: 'serif-bold', size: 67, color: GOLD, lines: [c('Oferta i Cennik', 743.1, 102.4)] },
@@ -208,6 +245,7 @@ export const slides: Slide[] = [
     id: 'sesje',
     label: 'Rodzaje sesji',
     bg: '/slides/slide-5.jpg',
+    art: '/slides/art-5.webp',
     fill: '#512635',
     blocks: [
       { tag: 'h3', font: 'sans-bold', size: 31, color: WHITE, lines: [c('Pojedyncze pytanie', 426.2, 240)] },
@@ -247,6 +285,7 @@ export const slides: Slide[] = [
     id: 'kontakt',
     label: 'Kontakt',
     bg: '/slides/slide-6.jpg',
+    art: '/slides/art-6.webp',
     fill: '#232340',
     intro: {
       title: 'Jak przebiega sesja?',
@@ -266,14 +305,15 @@ export const slides: Slide[] = [
         font: 'sans-bold',
         size: 36.76,
         color: PLUM,
-        lines: [{ t: '+48 729 995 196', x: 470.9, y: 466.1, rot: -2.9, href: PHONE }]
+        // The number opens a WhatsApp chat (not a phone call)
+        lines: [{ t: PHONE_DISPLAY, x: 470.9, y: 466.1, rot: -2.9, href: WHATSAPP }]
       },
       {
         tag: 'p',
         font: 'sans-bold',
         size: 36.57,
         color: PLUM,
-        lines: [{ t: 'justyna109a@onet.pl', x: 451.9, y: 578.5, rot: -2.91, href: MAIL }]
+        lines: [{ t: EMAIL, x: 451.9, y: 578.5, rot: -2.91, href: MAIL }]
       }
     ],
     hotspots: [
@@ -282,3 +322,91 @@ export const slides: Slide[] = [
     ]
   }
 ]
+
+// ---------------------------------------------------------------------------
+// Phone layouts. Rectangles are pieces of the text-free PDF pages (PDF units);
+// block numbers refer to each slide's `blocks` above.
+// ---------------------------------------------------------------------------
+
+const CORNER_TL: Rect = { x: 65, y: 40, w: 150, h: 140 }
+const CORNER_TR: Rect = { x: 1225, y: 40, w: 150, h: 140 }
+
+const mobileLayouts: Record<string, SlideMobile> = {
+  start: {
+    pieces: [
+      { k: 'crop', r: { x: 560, y: 45, w: 870, h: 190 } },
+      { k: 'block', i: 0, cls: 'h1' },
+      { k: 'crop', r: { x: 560, y: 400, w: 870, h: 185 } },
+      { k: 'block', i: 1, cls: 'sub' },
+      { k: 'crop', r: { x: 40, y: 75, w: 520, h: 665 }, width: '62%' }
+    ]
+  },
+  'o-mnie': {
+    decos: [
+      { r: { x: 0, y: 30, w: 250, h: 475 }, at: 'tl', width: '28%', opacity: 0.45 },
+      { r: { x: 0, y: 530, w: 325, h: 280 }, at: 'bl', width: '32%', opacity: 0.45 },
+      { r: { x: 1225, y: 635, w: 150, h: 140 }, at: 'br', width: '16%' }
+    ],
+    pieces: [
+      { k: 'crop', r: { x: 460, y: 60, w: 640, h: 160 }, blocks: [0] },
+      { k: 'block', i: 1, cls: 'lead center' },
+      { k: 'sep' },
+      { k: 'block', i: 2, cls: 'body center' }
+    ]
+  },
+  karty: {
+    decos: [
+      { r: { x: 35, y: 22, w: 145, h: 145 }, at: 'tl', width: '17%', opacity: 0.85 },
+      { r: { x: 1252, y: 10, w: 145, h: 145 }, at: 'tr', width: '17%', opacity: 0.85 }
+    ],
+    pieces: [
+      { k: 'block', i: 0, cls: 'h2 pad' },
+      { k: 'block', i: 1, cls: 'lead center' },
+      {
+        k: 'panel',
+        tone: 'plum',
+        items: [
+          { k: 'block', i: 2, cls: 'serif' },
+          { k: 'bullet', icon: { x: 113, y: 415, w: 117, h: 105 }, i: 3 },
+          { k: 'bullet', icon: { x: 113, y: 415, w: 117, h: 105 }, i: 4 },
+          { k: 'block', i: 5, cls: 'serif' }
+        ]
+      }
+    ]
+  },
+  oferta: {
+    decos: [
+      { r: CORNER_TL, at: 'tl', width: '16%' },
+      { r: CORNER_TR, at: 'tr', width: '16%' }
+    ],
+    pieces: [
+      { k: 'block', i: 0, cls: 'h2 pad' },
+      { k: 'block', i: 1, cls: 'lead center' },
+      { k: 'crop', r: { x: 135, y: 193, w: 546, h: 405 }, blocks: [2, 3] },
+      { k: 'crop', r: { x: 757, y: 201, w: 547, h: 400 }, blocks: [4, 5] },
+      { k: 'crop', r: { x: 545, y: 598, w: 345, h: 212 }, width: '55%' }
+    ]
+  },
+  sesje: {
+    pieces: [
+      { k: 'crop', r: { x: 290, y: 5, w: 870, h: 140 } },
+      {
+        k: 'panel',
+        tone: 'navy',
+        items: [
+          { k: 'block', i: 0, cls: 'h3' },
+          { k: 'block', i: 1, cls: 'body' },
+          { k: 'sep' },
+          { k: 'block', i: 2, cls: 'h3' },
+          { k: 'block', i: 3, cls: 'body' }
+        ]
+      },
+      { k: 'crop', r: { x: 290, y: 662, w: 870, h: 140 } }
+    ]
+  },
+  kontakt: {
+    pieces: [{ k: 'crop', r: { x: 225, y: 0, w: 1060, h: 780 }, blocks: [0, 1, 2], hotspots: true }]
+  }
+}
+
+for (const s of slides) s.mobile = mobileLayouts[s.id]
