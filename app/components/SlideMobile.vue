@@ -35,7 +35,8 @@ function render(p: MPiece): ReturnType<typeof h> {
         rect: p.r,
         blocks: p.blocks,
         withHotspots: p.hotspots ?? false,
-        width: p.width
+        width: p.width,
+        style: p.clip ? { clipPath: p.clip } : undefined
       })
     case 'block': {
       const block = slide.blocks[p.i]!

@@ -111,6 +111,7 @@ const ombre = computed(() => {
   color: #d5b163;
   font-weight: 700;
   text-decoration: none;
+  white-space: nowrap; /* keep "e-mail" in one piece */
 }
 
 .intro__text a:hover,

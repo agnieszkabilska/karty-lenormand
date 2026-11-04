@@ -16,7 +16,14 @@ export function placeIn(r: Rect, x: number, y: number, w?: number, h?: number) {
 export function lineStyle(line: Line, r: Rect = FULL) {
   const style = placeIn(r, line.x, line.y)
   if (line.align === 'justify' && line.w) style.width = `calc(${line.w} * var(--u))`
-  if (line.rot) style.transform = `rotate(${line.rot}deg) translateY(calc(-1em * var(--asc)))`
+  if (line.rot && line.align === 'center') {
+    // Centred line: tilt around its own middle so it stays in place
+    style.transform = `translate(-50%, calc(-1em * var(--asc))) rotate(${line.rot}deg)`
+    style.transformOrigin = '50% 50%'
+  } else if (line.rot) {
+    // Left-aligned line: tilt around the start of the baseline (as in the PDF)
+    style.transform = `rotate(${line.rot}deg) translateY(calc(-1em * var(--asc)))`
+  }
   return style
 }
 

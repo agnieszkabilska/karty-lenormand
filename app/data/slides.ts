@@ -58,7 +58,7 @@ export interface Rect {
 
 /** One element of the phone layout, stacked top to bottom. */
 export type MPiece =
-  | { k: 'crop'; r: Rect; blocks?: number[]; hotspots?: boolean; width?: string } // piece of the PDF art (+ its text)
+  | { k: 'crop'; r: Rect; blocks?: number[]; hotspots?: boolean; width?: string; clip?: string } // piece of the PDF art (+ its text); `clip` = CSS clip-path
   | { k: 'block'; i: number; cls: string } // slide block `i` as flowing text
   | { k: 'panel'; tone: 'plum' | 'navy'; items: MPiece[] } // gold-framed box
   | { k: 'bullet'; icon: Rect; i: number } // block `i` with an art icon in front
@@ -299,7 +299,15 @@ export const slides: Slide[] = [
       ]
     },
     blocks: [
-      { tag: 'h2', font: 'sans-bold', size: 65, color: PLUM, lines: [l('Skontaktuj się', 678.8, 266.5)] },
+      {
+        tag: 'h2',
+        font: 'sans-bold',
+        size: 65,
+        color: PLUM,
+        // Tilted 14.1° to run parallel to the top edge of the back card, centred
+        // on the card's axis (card corners ≈ (681,15) and (1212,153))
+        lines: [{ t: 'Skontaktuj się', x: 913.7, y: 226, align: 'center', rot: 14.1 }]
+      },
       {
         tag: 'p',
         font: 'sans-bold',
@@ -405,7 +413,22 @@ const mobileLayouts: Record<string, SlideMobile> = {
     ]
   },
   kontakt: {
-    pieces: [{ k: 'crop', r: { x: 225, y: 0, w: 1060, h: 780 }, blocks: [0, 1, 2], hotspots: true }]
+    // Sun and hourglass shown whole in the corners instead of sliced at the
+    // edges of the cards picture
+    decos: [
+      { r: { x: 0, y: 0, w: 295, h: 382 }, at: 'tl', width: '30%', opacity: 0.4 },
+      { r: { x: 1198, y: 424, w: 242, h: 386 }, at: 'br', width: '26%', opacity: 0.55 }
+    ],
+    pieces: [
+      {
+        k: 'crop',
+        r: { x: 294, y: 6, w: 922, h: 730 },
+        blocks: [0, 1, 2],
+        hotspots: true,
+        // cut away the bottom-right corner where the hourglass lid pokes in
+        clip: 'polygon(0 0, 100% 0, 100% 56%, 94% 56%, 94% 100%, 0 100%)'
+      }
+    ]
   }
 }
 
