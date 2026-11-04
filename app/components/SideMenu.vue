@@ -7,7 +7,7 @@
 
     <span class="stars" aria-hidden="true">✦ ✧ ✦</span>
 
-    <nav aria-label="Menu">
+    <nav ref="navEl" aria-label="Menu">
       <ul>
         <li v-for="s in slides" :key="s.id">
           <a
@@ -32,7 +32,22 @@
 import { EMAIL, MAIL, PHONE_DISPLAY, WHATSAPP, slides } from '~/data/slides'
 
 const active = ref(slides[0]!.id)
+const navEl = ref<HTMLElement | null>(null)
 let observer: IntersectionObserver | undefined
+
+// On phones the menu is a horizontally scrolling bar: slide it sideways so the
+// current section's link is always in view (centred where possible).
+watch(active, (id) => {
+  const nav = navEl.value
+  if (!nav || nav.scrollWidth <= nav.clientWidth) return // desktop: nothing to scroll
+  const link = nav.querySelector<HTMLElement>(`a[href="#${id}"]`)
+  if (!link) return
+  const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches
+  nav.scrollTo({
+    left: link.offsetLeft - (nav.clientWidth - link.offsetWidth) / 2,
+    behavior: reduce ? 'auto' : 'smooth'
+  })
+})
 
 onMounted(() => {
   // A slide counts as current while it crosses the middle of the viewport
@@ -199,8 +214,12 @@ nav a.active::before {
   }
 
   nav {
+    position: relative; /* links' offsetLeft is measured from the bar */
     overflow-x: auto;
     scrollbar-width: none;
+    /* soft fade where links slide under the edges */
+    -webkit-mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
+    mask-image: linear-gradient(90deg, transparent 0, #000 18px, #000 calc(100% - 18px), transparent 100%);
   }
 
   nav ul {
